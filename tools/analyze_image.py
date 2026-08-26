@@ -1,4 +1,5 @@
 from pathlib import Path
+from uboot_toolkit.detector import detect_signatures
 import argparse
 
 def analyze_image(image_path: Path) -> None:
@@ -12,9 +13,22 @@ def analyze_image(image_path: Path) -> None:
     print(f"Size: {size:,} bytes (0x{size:X})")
 
     with image_path.open("rb") as image_file:
-        header = image_file.read(64)
+        data = image_file.read()
 
+    header = data[:64]
     print(f"First 64 bytes: {header.hex(' ')}")
+
+    detections = detect_signatures(data)
+
+    print("\n=== Detected Structures ===")
+
+    if not detections:
+        print("No known signatures found.")
+        return
+    for detection in detections:
+        print(f"{detection.name}")
+        print(f"  Offset: 0x{detection.offset:08X}")
+        print(f"  Signature: {detection.signature.hex(' ')}")
 
 
 def main() -> None:
