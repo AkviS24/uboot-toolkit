@@ -11,6 +11,11 @@ def analyze_image(image_path: Path) -> None:
     print(f"File: {image_path}")
     print(f"Size: {size:,} bytes (0x{size:X})")
 
+    with image_path.open("rb") as image_file:
+        header = image_file.read(64)
+
+    print(f"First 64 bytes: {header.hex(' ')}")
+
 
 def main() -> None:
     """Command-Line entry Point"""
