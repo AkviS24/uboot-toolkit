@@ -1,9 +1,13 @@
-from pathlib import Path
-from uboot_toolkit.detector import detect_signatures
+"""Command-line tool for analyzing firmware images."""
 import argparse
+from pathlib import Path
+
+from uboot_toolkit.detector import detect_signatures
+from uboot_toolkit.parser import parse_dtb_header
+
 
 def analyze_image(image_path: Path) -> None:
-    """Display Basic Informations about a firmware image File."""
+    """Analyze a firmware image."""
     if not image_path.is_file():
         raise FileNotFoundError(f"Image not found: {image_path}")
 
@@ -30,11 +34,30 @@ def analyze_image(image_path: Path) -> None:
         print(f"  Offset: 0x{detection.offset:08X}")
         print(f"  Signature: {detection.signature.hex(' ')}")
 
+        if detection.name == "Device Tree Blob (DTB)":
+            dtb = parse_dtb_header(data, detection.offset)
+
+            print(f" Total Size: {dtb.total_size:,} bytes")
+            print(f" Structure Offset: 0x{dtb.structure_offset:08X}")
+            print(f" Strings Offset: 0x{dtb.strings_offset:08X}")
+            print(
+                " Memory Reservation Offset: "
+                f"0x{dtb.memory_reservation_offset:08X}"
+            )
+            print(f" Version: {dtb.version}")
+            print(
+                " Last Compatible Version: "
+                f"{dtb.last_compatible_version}"
+            )
+            print(f" Boot CPU ID: 0x{dtb.boot_cpu_id:08X}")
+            print(f" Structure Size: {dtb.structure_size:,} bytes")
+            print(f" Strings Size: {dtb.strings_size:,} bytes")
+
 
 def main() -> None:
-    """Command-Line entry Point"""
+    """Run the Command-Line interface."""
     parser = argparse.ArgumentParser(
-        description="Analyze U-Boot and firmware images..."
+        description="Analyze a firmware image..."
     )
     parser.add_argument(
         "image",
@@ -43,10 +66,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    try:
-        analyze_image(args.image)
-    except FileNotFoundError as error:
-        parser.error(str(error))
+    analyze_image(args.image)
 
 if __name__ == "__main__":
     main()
