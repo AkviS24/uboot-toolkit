@@ -55,3 +55,19 @@ def parse_dtb_header(data: bytes, offset: int = 0) -> DtbHeader:
         structure_size=values[8],
         strings_size=values[7],
     )
+
+def get_dtb_structure_bounds(
+    header: DtbHeader,
+    offset: int = 0,
+) -> tuple[int, int]:
+    """Return absolute start and end offsets of the DTB structure block."""
+    if offset < 0:
+        raise ValueError("Offset must not be negative.")
+
+    structure_start = offset + header.structure_offset
+    structure_end = structure_start + header.structure_size
+
+    if structure_end > offset + header.total_size:
+        raise ValueError("DTB structure extends beyond the DTB.")
+
+    return structure_start, structure_end

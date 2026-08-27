@@ -3,8 +3,11 @@ import argparse
 from pathlib import Path
 
 from uboot_toolkit.detector import detect_signatures
-from uboot_toolkit.parser import parse_dtb_header
 from uboot_toolkit.structure import parse_structure
+from uboot_toolkit.parser import (
+    get_dtb_structure_bounds,
+    parse_dtb_header,
+)
 
 
 def analyze_image(image_path: Path) -> None:
@@ -54,10 +57,15 @@ def analyze_image(image_path: Path) -> None:
             print(f" Structure Size: {dtb.structure_size:,} bytes")
             print(f" Strings Size: {dtb.strings_size:,} bytes")
 
+            structure_start, structure_end = get_dtb_structure_bounds(
+                dtb,
+                detection.offset,
+            )
+
             structure_tokens = parse_structure(
                 data,
-                detection.offset + dtb.structure_offset,
-                dtb.structure_size,
+                structure_start,
+                structure_end - structure_start,
             )
 
             print("  Structure Tokens:")

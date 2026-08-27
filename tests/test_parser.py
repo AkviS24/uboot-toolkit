@@ -2,7 +2,10 @@
 
 import pytest
 
-from uboot_toolkit.parser import parse_dtb_header
+from uboot_toolkit.parser import (
+    get_dtb_structure_bounds,
+    parse_dtb_header,
+)
 
 def test_parse_dtb_header() -> None:
     """Parse a valid DTB header."""
@@ -71,3 +74,24 @@ def test_parse_incomplete_dtb_header() -> None:
     with pytest.raises(ValueError, match="Not enough data"):
         parse_dtb_header(data)
 
+def test_get_dtb_structure_bounds() -> None:
+    """Calculate absolute DTB structure boundaries."""
+    data = bytes.fromhex(
+        "D00DFEED"
+        "00000A00"
+        "00000048"
+        "00000808"
+        "00000028"
+        "00000011"
+        "00000010"
+        "00000000"
+        "000000CD"
+        "000007C0"
+    )
+
+    header = parse_dtb_header(data)
+
+    start, end = get_dtb_structure_bounds(header)
+
+    assert start == 0x48
+    assert end == 0x808
