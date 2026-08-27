@@ -1,6 +1,8 @@
 """Parsers for detected binary structures"""
 from dataclasses import dataclass
 
+from uboot_toolkit.structure import FDT_PROP, StructureToken
+
 
 DTB_HEADER_SIZE = 40
 DTB_MAGIC = 0xD00DFEED
@@ -109,4 +111,26 @@ def resolve_dtb_string(
     return data[string_start:string_end].decode(
         "ascii",
         errors="replace",
+    )
+
+
+def resolve_property_name(
+    token: StructureToken,
+    data: bytes,
+    strings_offset: int,
+    strings_size: int,
+) -> str:
+    """Resolve the name of a DTB property token."""
+
+    if token.property_name_offset is None:
+        raise ValueError("Token does not contain a property name offset.")
+
+    if token.token != FDT_PROP:
+        raise ValueError("Token is not a property token.")
+
+    return resolve_dtb_string(
+        data=data,
+        strings_offset=strings_offset,
+        strings_size=strings_size,
+        name_offset=token.property_name_offset,
     )

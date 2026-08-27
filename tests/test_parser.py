@@ -2,10 +2,12 @@
 
 import pytest
 
+from uboot_toolkit.structure import StructureToken, FDT_PROP
 from uboot_toolkit.parser import (
     get_dtb_structure_bounds,
     parse_dtb_header,
     resolve_dtb_string,
+    resolve_property_name,
 )
 
 def test_parse_dtb_header() -> None:
@@ -128,3 +130,28 @@ def test_resolve_dtb_string_at_offset() -> None:
     )
 
     assert result == "model"
+
+
+def test_resolve_property_name() -> None:
+    """Resolve a property token name from the DTB strings block."""
+    strings = b"compatible\x00model\x00bootargs\x00"
+
+    data = b"\x00" * 0x20 + strings
+
+    token = StructureToken(
+        offset=0,
+        token=FDT_PROP,
+        name="PROP",
+        property_length=4,
+        property_name_offset=0,
+        property_value=b"ABCD",
+    )
+
+    result = resolve_property_name(
+        token=token,
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+    )
+
+    assert result == "compatible"
