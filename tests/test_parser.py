@@ -3,13 +3,16 @@
 import pytest
 
 from uboot_toolkit.structure import (
+    DtbNode,
+    DtbProperty,
     FDT_BEGIN_NODE,
     FDT_PROP,
-    StructureToken
+    StructureToken,
 )
 
 from uboot_toolkit.parser import (
     build_dtb_property,
+    convert_dtb_properties,
     get_dtb_structure_bounds,
     parse_dtb_header,
     resolve_dtb_string,
@@ -205,3 +208,133 @@ def test_build_dtb_property_rejects_non_property_token():
             strings_offset=0,
             strings_size=0,
         )
+
+
+
+def test_convert_dtb_properties():
+    """Convert property tokens in a DTB node into DtbProperty objects."""
+    strings = b"compatible\x00"
+    data = b"\x00" * 0x20 + strings
+
+    token = StructureToken(
+        offset=0,
+        token=FDT_PROP,
+        name="PROP",
+        property_length=15,
+        property_name_offset=0,
+        property_value=b"rockchip,rk3566",
+    )
+
+    root = DtbNode(
+        name="",
+        properties=[token],
+        children=[],
+    )
+
+    result = convert_dtb_properties(
+        node=root,
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+    )
+
+    assert result is root
+    assert len(result.properties) == 1
+
+    assert isinstance(result.properties[0], DtbProperty)
+    assert result.properties[0].name == "compatible"
+    assert result.properties[0].value == b"rockchip,rk3566"
+
+
+
+def test_convert_dtb_properties_recursively():
+    """Convert properties in child nodes recursively."""
+    strings = b"bootargs\x00"
+    data = b"\x00" * 0x20 + strings
+
+    token = StructureToken(
+        offset=0,
+        token=FDT_PROP,
+        name="PROP",
+        property_length=4,
+        property_name_offset=0,
+        property_value=b"boot",
+    )
+
+    child = DtbNode(
+        name="chosen",
+        properties=[token],
+        children=[],
+    )
+
+    root = DtbNode(
+        name="",
+        properties=[],
+        children=[child],
+    )
+
+    result = convert_dtb_properties(
+        node=root,
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+    )
+
+    chosen = result.children[0]
+
+    assert len(result.properties) == 0
+    assert len(chosen.properties) == 1
+
+    assert isinstance(chosen.properties[0], DtbProperty)
+    assert chosen.properties[0].name == "bootargs"
+    assert chosen.properties[0].value == b"boot"
+
+
+def test_convert_multiple_dtb_properties():
+    """Convert multiple properties belonging to the same node."""
+    strings = b"compatible\x00model\x00"
+    data = b"\x00" * 0x20 + strings
+
+    compatible_token = StructureToken(
+        offset=0,
+        token=FDT_PROP,
+        name="PROP",
+        property_length=15,
+        property_name_offset=0,
+        property_value=b"rockchip,rk3566",
+    )
+
+    model_token = StructureToken(
+        offset=0,
+        token=FDT_PROP,
+        name="PROP",
+        property_length=8,
+        property_name_offset=11,
+        property_value=b"T95 Plus",
+    )
+
+    root = DtbNode(
+        name="",
+        properties=[
+            compatible_token,
+            model_token,
+        ],
+        children=[],
+    )
+
+    result = convert_dtb_properties(
+        node=root,
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+    )
+
+    assert len(result.properties) == 2
+
+    assert isinstance(result.properties[0], DtbProperty)
+    assert result.properties[0].name == "compatible"
+    assert result.properties[0].value == b"rockchip,rk3566"
+
+    assert isinstance(result.properties[1], DtbProperty)
+    assert result.properties[1].name == "model"
+    assert result.properties[1].value == b"T95 Plus"

@@ -166,3 +166,36 @@ def build_dtb_property(
         name=name,
         value=token.property_value,
     )
+
+
+def convert_dtb_properties(
+    node,
+    data: bytes,
+    strings_offset: int,
+    strings_size: int,
+):
+    """Convert property tokens in a DTB tree into DtbProperty objects."""
+
+    converted_properties = []
+
+    for property_item in node.properties:
+        converted_properties.append(
+            build_dtb_property(
+                token=property_item,
+                data=data,
+                strings_offset=strings_offset,
+                strings_size=strings_size,
+            )
+        )
+
+    node.properties = converted_properties
+
+    for child in node.children:
+        convert_dtb_properties(
+            node=child,
+            data=data,
+            strings_offset=strings_offset,
+            strings_size=strings_size,
+        )
+
+    return node

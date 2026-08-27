@@ -23,7 +23,7 @@ class StructureToken:
 class DtbNode:
     name: str
     children: list["DtbNode"]
-    properties: list[StructureToken]
+    properties: list[DtbProperty]
 
 
 @dataclass
@@ -126,6 +126,7 @@ def parse_structure(data: bytes, offset: int, size: int) -> list[StructureToken]
 
 
 def build_dtb_tree(tokens: list[StructureToken]) -> DtbNode:
+    
     """Build a DTB node tree from structure tokens."""
     root: DtbNode | None = None
     stack: list[DtbNode] = []
