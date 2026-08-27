@@ -19,6 +19,13 @@ class StructureToken:
     property_value: bytes | None = None
 
 
+@dataclass
+class DtbNode:
+    name: str
+    children: list["DtbNode"]
+    properties: list[StructureToken]
+
+
 TOKEN_NAMES = {
     FDT_BEGIN_NODE: "BEGIN_NODE",
     FDT_END_NODE: "END_NODE",
@@ -110,3 +117,53 @@ def parse_structure(data: bytes, offset: int, size: int) -> list[StructureToken]
                 break
 
     return tokens
+
+
+def build_dtb_tree(tokens: list[StructureToken]) -> DtbNode:
+    """Build a DTB node tree from structure tokens."""
+    root: DtbNode | None = None
+    stack: list[DtbNode] = []
+
+    for token in tokens:
+        if token.token == FDT_BEGIN_NODE:
+            if token.node_name is None:
+                raise ValueError("BEGIN_NODE token has no node name.")
+
+            node = DtbNode(
+                name=token.node_name,
+                children=[],
+                properties=[],
+            )
+
+            if stack:
+                stack[-1].children.append(node)
+            else:
+                if root is not None:
+                    raise ValueError("Multiple root nodes found.")
+
+                root = node
+
+            stack.append(node)
+
+        elif token.token == FDT_END_NODE:
+            if not stack:
+                raise ValueError("END_NODE without matching BEGIN_NODE.")
+
+            stack.pop()
+
+        elif token.token == FDT_PROP:
+            if not stack:
+                raise ValueError("PROP outside of a DTB node.")
+
+            stack[-1].properties.append(token)
+
+        elif token.token == FDT_END:
+            break
+
+    if root is None:
+        raise ValueError("No root node found.")
+
+    if stack:
+        raise ValueError("Unclosed DTB node.")
+
+    return root
