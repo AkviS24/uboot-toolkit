@@ -13,6 +13,10 @@ class StructureToken:
     offset: int
     token: int
     name: str
+    node_name: str | None = None
+    property_length: int | None = None
+    property_name_offset: int | None = None
+    property_value: bytes | None = None
 
 
 TOKEN_NAMES = {
@@ -51,8 +55,20 @@ def parse_structure(data: bytes, offset: int, size: int) -> list[StructureToken]
             break
 
         if token == FDT_BEGIN_NODE:
+            node_name_start = position
+
             while position < end and data[position] != 0:
                 position += 1
+
+            if position >= end:
+                break
+
+            node_name = data[node_name_start:position].decode(
+                "ascii",
+                errors="replace",
+            )
+
+            tokens[-1].node_name = node_name
 
             position += 1
 
@@ -68,10 +84,22 @@ def parse_structure(data: bytes, offset: int, size: int) -> list[StructureToken]
                 "big",
             )
 
-            property_end = position + 8 + property_length
+            property_name_offset = int.from_bytes(
+                data[position + 4:position + 8],
+                "big",
+            )
+
+            property_value_start = position + 8
+            property_end = property_value_start + property_length
 
             if property_end > end:
                 break
+
+            property_value = data[property_value_start:property_end]
+
+            tokens[-1].property_length = property_length
+            tokens[-1].property_name_offset = property_name_offset
+            tokens[-1].property_value = property_value
 
             position = property_end
 

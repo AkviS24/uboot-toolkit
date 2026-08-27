@@ -64,3 +64,38 @@ def test_structure_end_matches_calculated_boundary() -> None:
 
     assert tokens[-1].name == "END"
     assert tokens[-1].offset + 4 == len(data)
+
+
+def test_parse_structure_reads_node_name():
+    data = (
+        b"\x00\x00\x00\x01"  # FDT_BEGIN_NODE
+        b"root\x00\x00\x00\x00"
+        b"\x00\x00\x00\x09"  # FDT_END
+    )
+
+    tokens = parse_structure(data, 0, len(data))
+
+    assert tokens[0].name == "BEGIN_NODE"
+    assert tokens[0].node_name == "root"
+
+
+def test_parse_property_metadata():
+    property_data = b"ABCD"
+    property_name_offset = 0x10
+
+    data = (
+        b"\x00\x00\x00\x03"  # FDT_PROP
+        + len(property_data).to_bytes(4, "big")
+        + property_name_offset.to_bytes(4, "big")
+        + property_data
+        + b"\x00\x00\x00\x09"  # FDT_END
+    )
+
+    tokens = parse_structure(data, 0, len(data))
+
+    property_token = tokens[0]
+
+    assert property_token.name == "PROP"
+    assert property_token.property_length == 4
+    assert property_token.property_name_offset == 0x10
+    assert property_token.property_value == b"ABCD"

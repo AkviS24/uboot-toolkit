@@ -71,3 +71,42 @@ def get_dtb_structure_bounds(
         raise ValueError("DTB structure extends beyond the DTB.")
 
     return structure_start, structure_end
+
+
+def resolve_dtb_string(
+    data: bytes,
+    strings_offset: int,
+    strings_size: int,
+    name_offset: int,
+) -> str:
+    """Resolve a null-terminated string from the DTB strings block."""
+    if strings_offset < 0:
+        raise ValueError("Strings offset must not be negative.")
+
+    if strings_size < 0:
+        raise ValueError("Strings size must not be negative.")
+
+    if name_offset < 0:
+        raise ValueError("Name offset must not be negative.")
+
+    strings_end = strings_offset + strings_size
+
+    if strings_end > len(data):
+        raise ValueError("DTB strings block extends beyond the data.")
+
+    if name_offset >= strings_size:
+        raise ValueError("Property name offset is outside the strings block.")
+
+    string_start = strings_offset + name_offset
+    string_end = string_start
+
+    while string_end < strings_end and data[string_end] != 0:
+        string_end += 1
+
+    if string_end >= strings_end:
+        raise ValueError("DTB string is not null-terminated.")
+
+    return data[string_start:string_end].decode(
+        "ascii",
+        errors="replace",
+    )

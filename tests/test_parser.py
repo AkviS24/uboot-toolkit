@@ -5,6 +5,7 @@ import pytest
 from uboot_toolkit.parser import (
     get_dtb_structure_bounds,
     parse_dtb_header,
+    resolve_dtb_string,
 )
 
 def test_parse_dtb_header() -> None:
@@ -95,3 +96,35 @@ def test_get_dtb_structure_bounds() -> None:
 
     assert start == 0x48
     assert end == 0x808
+
+
+def test_resolve_dtb_string() -> None:
+    """Resolve a null-terminated string from the DTB strings block."""
+    strings = b"compatible\x00model\x00bootargs\x00"
+
+    data = b"\x00" * 0x20 + strings
+
+    result = resolve_dtb_string(
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+        name_offset=0,
+    )
+
+    assert result == "compatible"
+
+
+def test_resolve_dtb_string_at_offset() -> None:
+    """Resolve a string using an offset inside the strings block."""
+    strings = b"compatible\x00model\x00bootargs\x00"
+
+    data = b"\x00" * 0x20 + strings
+
+    result = resolve_dtb_string(
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+        name_offset=11,
+    )
+
+    assert result == "model"
