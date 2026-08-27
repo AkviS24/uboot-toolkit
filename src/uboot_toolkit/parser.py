@@ -199,3 +199,40 @@ def convert_dtb_properties(
         )
 
     return node
+
+
+
+def parse_dtb(data: bytes, offset: int = 0):
+    """Parse a complete DTB from raw binary data."""
+
+    from uboot_toolkit.structure import (
+        build_dtb_tree,
+        parse_structure,
+    )
+
+    header = parse_dtb_header(
+        data=data,
+        offset=offset,
+    )
+
+    structure_start, structure_end = get_dtb_structure_bounds(
+        header=header,
+        offset=offset,
+    )
+
+    tokens = parse_structure(
+        data=data,
+        offset=structure_start,
+        size=structure_end - structure_start,
+    )
+
+    root = build_dtb_tree(tokens)
+
+    root = convert_dtb_properties(
+        node=root,
+        data=data,
+        strings_offset=offset + header.strings_offset,
+        strings_size=header.strings_size,
+    )
+
+    return root

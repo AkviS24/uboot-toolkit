@@ -14,6 +14,7 @@ from uboot_toolkit.parser import (
     build_dtb_property,
     convert_dtb_properties,
     get_dtb_structure_bounds,
+    parse_dtb,
     parse_dtb_header,
     resolve_dtb_string,
     resolve_property_name,
@@ -338,3 +339,131 @@ def test_convert_multiple_dtb_properties():
     assert isinstance(result.properties[1], DtbProperty)
     assert result.properties[1].name == "model"
     assert result.properties[1].value == b"T95 Plus"
+
+
+def test_parse_dtb_end_to_end() -> None:
+    """Parse a minimal DTB from raw bytes to a structured tree."""
+
+    strings = b"compatible\x00"
+
+    structure = (
+        b"\x00\x00\x00\x01"          # FDT_BEGIN_NODE
+        b"\x00\x00\x00\x00"          # empty root node name + padding
+        b"\x00\x00\x00\x03"          # FDT_PROP
+        b"\x00\x00\x00\x0F"          # property length = 14
+        b"\x00\x00\x00\x00"          # name offset = 0
+        b"rockchip,rk3566"            # property value
+        b"\x00"                   # padding
+        b"\x00\x00\x00\x02"          # FDT_END_NODE
+        b"\x00\x00\x00\x09"          # FDT_END
+    )
+
+    structure_offset = 0x28
+    strings_offset = structure_offset + len(structure)
+
+    header = (
+        b"\xD0\x0D\xFE\xED"                           # magic
+        + (strings_offset + len(strings)).to_bytes(4, "big")
+        + structure_offset.to_bytes(4, "big")
+        + strings_offset.to_bytes(4, "big")
+        + (0x28).to_bytes(4, "big")                  # memory reservation
+        + (17).to_bytes(4, "big")                    # version
+        + (16).to_bytes(4, "big")                    # last compatible
+        + (0).to_bytes(4, "big")                     # boot CPU
+        + len(strings).to_bytes(4, "big")           # structure size
+        + len(structure).to_bytes(4, "big")             # strings size
+    )
+
+    data = header + structure + strings
+
+    result = parse_dtb(data)
+
+    assert result.name == ""
+    assert len(result.properties) == 1
+
+    property_item = result.properties[0]
+
+    assert property_item.name == "compatible"
+    assert property_item.value == b"rockchip,rk3566"
+
+
+def test_parse_dtb_end_to_end_with_child_node() -> None:
+    """Parse a DTB with nested child nodes from raw bytes."""
+
+    strings = (
+        b"compatible\x00"
+        b"status\x00"
+    )
+
+    structure = (
+        # /
+        b"\x00\x00\x00\x01"          # FDT_BEGIN_NODE
+        b"\x00\x00\x00\x00"          # empty root name + padding
+
+        # compatible = "rockchip,rk3566"
+        b"\x00\x00\x00\x03"          # FDT_PROP
+        b"\x00\x00\x00\x0F"          # property length = 15
+        b"\x00\x00\x00\x00"          # name offset = 0
+        b"rockchip,rk3566"            # property value
+        b"\x00"                       # padding
+
+        # soc
+        b"\x00\x00\x00\x01"          # FDT_BEGIN_NODE
+        b"soc\x00"                    # node name
+
+        # serial@fe650000
+        b"\x00\x00\x00\x01"          # FDT_BEGIN_NODE
+        b"serial@fe650000\x00"        # node name
+
+        # status = "okay"
+        b"\x00\x00\x00\x03"          # FDT_PROP
+        b"\x00\x00\x00\x05"          # property length = 5
+        b"\x00\x00\x00\x0B"          # name offset = 11
+        b"okay\x00"                   # property value
+        b"\x00\x00\x00"               # padding
+
+        b"\x00\x00\x00\x02"          # FDT_END_NODE serial
+        b"\x00\x00\x00\x02"          # FDT_END_NODE soc
+        b"\x00\x00\x00\x02"          # FDT_END_NODE root
+        b"\x00\x00\x00\x09"          # FDT_END
+    )
+
+    structure_offset = 0x28
+    strings_offset = structure_offset + len(structure)
+
+    header = (
+        b"\xD0\x0D\xFE\xED"
+        + (strings_offset + len(strings)).to_bytes(4, "big")
+        + structure_offset.to_bytes(4, "big")
+        + strings_offset.to_bytes(4, "big")
+        + (0x28).to_bytes(4, "big")
+        + (17).to_bytes(4, "big")
+        + (16).to_bytes(4, "big")
+        + (0).to_bytes(4, "big")
+        + len(strings).to_bytes(4, "big")
+        + len(structure).to_bytes(4, "big")
+    )
+
+    data = header + structure + strings
+
+    result = parse_dtb(data)
+
+    assert result.name == ""
+    assert len(result.properties) == 1
+    assert result.properties[0].name == "compatible"
+    assert result.properties[0].value == b"rockchip,rk3566"
+
+    assert len(result.children) == 1
+
+    soc = result.children[0]
+
+    assert soc.name == "soc"
+    assert len(soc.properties) == 0
+    assert len(soc.children) == 1
+
+    serial = soc.children[0]
+
+    assert serial.name == "serial@fe650000"
+    assert len(serial.properties) == 1
+    assert serial.properties[0].name == "status"
+    assert serial.properties[0].value == b"okay\x00"
