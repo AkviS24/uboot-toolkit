@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from uboot_toolkit.decoder import decode_dtb_property
+from uboot_toolkit.decoder import decode_dtb_property, decode_reg
 from uboot_toolkit.parser import parse_dtb
 from uboot_toolkit.structure import DtbNode, DtbProperty
 
@@ -102,3 +102,31 @@ def test_real_dtb_property_values_can_be_decoded() -> None:
     assert decode_dtb_property(
         properties["#size-cells"]
     ) == 2
+
+
+def test_real_dtb_reg_property() -> None:
+    """Decode a reg property from a real DTB node."""
+
+    data = DTB_PATH.read_bytes()
+    root = parse_dtb(data)
+
+    ethernet = next(
+        child
+        for child in root.children
+        if child.name == "ethernet@fe010000"
+    )
+
+    properties = {
+        prop.name: prop.value
+        for prop in ethernet.properties
+        if isinstance(prop, DtbProperty)
+    }
+
+    result = decode_reg(
+        value=properties["reg"],
+        address_cells=2,
+        size_cells=2,
+    )
+
+    assert result
+    assert result[0]["address"] == 0xFE010000

@@ -36,3 +36,59 @@ def decode_dtb_property(value: bytes):
         return cells
 
     return value
+
+
+def decode_reg(
+    value: bytes,
+    address_cells: int,
+    size_cells: int,
+) -> list[dict[str, int]]:
+    """Decode a DTB reg property into address/size entries."""
+
+    if address_cells < 1:
+        raise ValueError("address_cells must be at least 1.")
+
+    if size_cells < 1:
+        raise ValueError("size_cells must be at least 1.")
+
+    entry_cells = address_cells + size_cells
+    entry_size = entry_cells * 4
+
+    if len(value) % entry_size != 0:
+        raise ValueError(
+            "reg property length is not a multiple of the entry size."
+        )
+
+    entries = []
+
+    for offset in range(0, len(value), entry_size):
+        address = 0
+
+        for index in range(address_cells):
+            cell_start = offset + index * 4
+            cell = int.from_bytes(
+                value[cell_start:cell_start + 4],
+                "big",
+            )
+            address = (address << 32) | cell
+
+        size = 0
+
+        size_offset = offset + address_cells * 4
+
+        for index in range(size_cells):
+            cell_start = size_offset + index * 4
+            cell = int.from_bytes(
+                value[cell_start:cell_start + 4],
+                "big",
+            )
+            size = (size << 32) | cell
+
+        entries.append(
+            {
+                "address": address,
+                "size": size,
+            }
+        )
+
+    return entries
