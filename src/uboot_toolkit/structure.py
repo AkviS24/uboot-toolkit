@@ -23,7 +23,7 @@ class StructureToken:
 class DtbNode:
     name: str
     children: list["DtbNode"]
-    properties: list[DtbProperty]
+    properties: list[StructureToken | DtbProperty]
 
 
 @dataclass
