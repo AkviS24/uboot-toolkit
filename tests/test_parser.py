@@ -2,8 +2,14 @@
 
 import pytest
 
-from uboot_toolkit.structure import StructureToken, FDT_PROP
+from uboot_toolkit.structure import (
+    FDT_BEGIN_NODE,
+    FDT_PROP,
+    StructureToken
+)
+
 from uboot_toolkit.parser import (
+    build_dtb_property,
     get_dtb_structure_bounds,
     parse_dtb_header,
     resolve_dtb_string,
@@ -155,3 +161,47 @@ def test_resolve_property_name() -> None:
     )
 
     assert result == "compatible"
+
+
+def test_build_dtb_property():
+    """Convert a property token into a DtbProperty."""
+    strings = b"compatible\x00model\x00"
+
+    data = b"\x00" * 0x20 + strings
+
+    token = StructureToken(
+        offset=0,
+        token=FDT_PROP,
+        name="PROP",
+        property_length=15,
+        property_name_offset=0,
+        property_value=b"rockchip,rk3566",
+    )
+
+    property_item = build_dtb_property(
+        token=token,
+        data=data,
+        strings_offset=0x20,
+        strings_size=len(strings),
+    )
+
+    assert property_item.name == "compatible"
+    assert property_item.value == b"rockchip,rk3566"
+
+
+def test_build_dtb_property_rejects_non_property_token():
+    """Reject a token that is not an FDT property token."""
+    token = StructureToken(
+        offset=0,
+        token=FDT_BEGIN_NODE,
+        name="BEGIN_NODE",
+        node_name="root",
+    )
+
+    with pytest.raises(ValueError, match="Token is not a property token"):
+        build_dtb_property(
+            token=token,
+            data=b"",
+            strings_offset=0,
+            strings_size=0,
+        )

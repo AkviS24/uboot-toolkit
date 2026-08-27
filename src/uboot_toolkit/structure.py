@@ -26,6 +26,12 @@ class DtbNode:
     properties: list[StructureToken]
 
 
+@dataclass
+class DtbProperty:
+    name: str
+    value: bytes
+
+
 TOKEN_NAMES = {
     FDT_BEGIN_NODE: "BEGIN_NODE",
     FDT_END_NODE: "END_NODE",

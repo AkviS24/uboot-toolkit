@@ -134,3 +134,35 @@ def resolve_property_name(
         strings_size=strings_size,
         name_offset=token.property_name_offset,
     )
+
+
+def build_dtb_property(
+    token: StructureToken,
+    data: bytes,
+    strings_offset: int,
+    strings_size: int,
+):
+    """Convert a property token into a DtbProperty."""
+
+    if token.token != FDT_PROP:
+        raise ValueError("Token is not a property token.")
+
+    if token.property_name_offset is None:
+        raise ValueError("Property token has no name offset.")
+
+    if token.property_value is None:
+        raise ValueError("Property token has no value.")
+
+    name = resolve_dtb_string(
+        data=data,
+        strings_offset=strings_offset,
+        strings_size=strings_size,
+        name_offset=token.property_name_offset,
+    )
+
+    from uboot_toolkit.structure import DtbProperty
+
+    return DtbProperty(
+        name=name,
+        value=token.property_value,
+    )

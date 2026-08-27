@@ -1,9 +1,11 @@
 from uboot_toolkit.structure import (
     DtbNode,
+    DtbProperty,
     FDT_BEGIN_NODE,
     FDT_END_NODE,
     FDT_PROP,
     FDT_END,
+    StructureToken,
     build_dtb_tree,
     parse_structure,
 )
@@ -199,3 +201,15 @@ def test_build_dtb_tree_assigns_nested_properties():
     assert chosen.name == "chosen"
     assert len(chosen.properties) == 1
     assert chosen.properties[0].property_value == b"boot"
+
+
+
+def test_dtb_property_creation():
+    """Create a DTB property with a name and value."""
+    property_item = DtbProperty(
+        name="compatible",
+        value=b"rockchip,rk3566",
+    )
+
+    assert property_item.name == "compatible"
+    assert property_item.value == b"rockchip,rk3566"
