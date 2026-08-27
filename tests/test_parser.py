@@ -350,7 +350,7 @@ def test_parse_dtb_end_to_end() -> None:
         b"\x00\x00\x00\x01"          # FDT_BEGIN_NODE
         b"\x00\x00\x00\x00"          # empty root node name + padding
         b"\x00\x00\x00\x03"          # FDT_PROP
-        b"\x00\x00\x00\x0F"          # property length = 14
+        b"\x00\x00\x00\x0F"          # property length = 15
         b"\x00\x00\x00\x00"          # name offset = 0
         b"rockchip,rk3566"            # property value
         b"\x00"                   # padding
@@ -370,8 +370,8 @@ def test_parse_dtb_end_to_end() -> None:
         + (17).to_bytes(4, "big")                    # version
         + (16).to_bytes(4, "big")                    # last compatible
         + (0).to_bytes(4, "big")                     # boot CPU
-        + len(strings).to_bytes(4, "big")           # structure size
-        + len(structure).to_bytes(4, "big")             # strings size
+        + len(strings).to_bytes(4, "big")           # strings size
+        + len(structure).to_bytes(4, "big")         # structure size
     )
 
     data = header + structure + strings
