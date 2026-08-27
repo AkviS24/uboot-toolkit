@@ -1,5 +1,7 @@
 """Decode Device Tree Blob property values."""
 
+from uboot_toolkit.structure import DtbNode, DtbProperty
+
 
 def decode_dtb_property(value: bytes):
     """Decode a DTB property value into a useful Python representation."""
@@ -92,3 +94,46 @@ def decode_reg(
         )
 
     return entries
+
+
+def get_node_cell_sizes(
+    node: DtbNode,
+) -> tuple[int, int]:
+    """Return address-cell and size-cell counts from a DTB node."""
+
+    address_cells = 2
+    size_cells = 1
+
+    for prop in node.properties:
+        if not isinstance(prop, DtbProperty):
+            continue
+
+        if prop.name == "#address-cells":
+            if len(prop.value) != 4:
+                raise ValueError(
+                    "#address-cells must contain one 32-bit cell."
+                )
+
+            address_cells = int.from_bytes(
+                prop.value,
+                "big",
+            )
+
+        elif prop.name == "#size-cells":
+            if len(prop.value) != 4:
+                raise ValueError(
+                    "#size-cells must contain one 32-bit cell."
+                )
+
+            size_cells = int.from_bytes(
+                prop.value,
+                "big",
+            )
+
+    if address_cells < 1:
+        raise ValueError("#address-cells must be at least 1.")
+
+    if size_cells < 1:
+        raise ValueError("#size-cells must be at least 1.")
+
+    return address_cells, size_cells
