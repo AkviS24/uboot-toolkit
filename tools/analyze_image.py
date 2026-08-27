@@ -4,6 +4,7 @@ from pathlib import Path
 
 from uboot_toolkit.detector import detect_signatures
 from uboot_toolkit.parser import parse_dtb_header
+from uboot_toolkit.structure import parse_structure
 
 
 def analyze_image(image_path: Path) -> None:
@@ -52,6 +53,20 @@ def analyze_image(image_path: Path) -> None:
             print(f" Boot CPU ID: 0x{dtb.boot_cpu_id:08X}")
             print(f" Structure Size: {dtb.structure_size:,} bytes")
             print(f" Strings Size: {dtb.strings_size:,} bytes")
+
+            structure_tokens = parse_structure(
+                data,
+                detection.offset + dtb.structure_offset,
+                dtb.structure_size,
+            )
+
+            print("  Structure Tokens:")
+
+            for token in structure_tokens:
+                print(
+                    f"    0x{token.offset:08X}: "
+                    f"{token.name}"
+                )
 
 
 def main() -> None:

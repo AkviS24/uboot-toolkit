@@ -29,8 +29,8 @@ def test_parse_dtb_header() -> None:
     assert header.version == 17
     assert header.last_compatible_version == 16
     assert header.boot_cpu_id == 0
-    assert header.structure_size == 205
-    assert header.strings_size == 1984
+    assert header.structure_size == 1984
+    assert header.strings_size == 205
 
 
 def test_parse_dtb_header_at_offset() -> None:

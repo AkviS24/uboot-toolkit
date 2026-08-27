@@ -68,9 +68,17 @@ def parse_structure(data: bytes, offset: int, size: int) -> list[StructureToken]
                 "big",
             )
 
-            position += 8 + property_length
+            property_end = position + 8 + property_length
+
+            if property_end > end:
+                break
+
+            position = property_end
 
             while position % 4 != 0:
                 position += 1
+
+            if position > end:
+                break
 
     return tokens

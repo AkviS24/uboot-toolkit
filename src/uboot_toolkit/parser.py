@@ -52,6 +52,6 @@ def parse_dtb_header(data: bytes, offset: int = 0) -> DtbHeader:
         version=values[4],
         last_compatible_version=values[5],
         boot_cpu_id=values[6],
-        structure_size=values[7],
-        strings_size=values[8],
+        structure_size=values[8],
+        strings_size=values[7],
     )
